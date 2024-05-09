@@ -134,6 +134,12 @@ export function setupVersionSelector(
                 map(sitemap => {
                   const location = getLocation()
                   const path = location.href.replace(config.base, "")
+                  // Need config.base / .. / version path, subtract it from the sitemap path (ignoring domain name)
+                  // TODO: Mike bug report (https://www.mkdocs.org/user-guide/configuration/#site_url)
+                  // Don't really need site_url, do I?
+                  console.log(location);
+                  console.log(path);
+                  console.log(sitemap);
                   return sitemap.has(path.split("#")[0])
                     ? new URL(`../${version}/${path}`, config.base)
                     : new URL(url)
