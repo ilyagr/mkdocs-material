@@ -126,15 +126,20 @@ export function setupVersionSelector(
                 }
 
                 ev.preventDefault()
-                return of(selectedVersionURL)
+                // TypeScript fails to infer the type correctly
+                const result: [Version, URL] = [
+                  selectedVersion,
+                  selectedVersionURL
+                ]
+                return of(result)
               }
             }
             return EMPTY
           }),
-          switchMap(selectedVersionBaseURL => {
+          switchMap(([selectedVersion, selectedVersionBaseURL]) => {
             return fetchSitemap(selectedVersionBaseURL)
               .pipe(
-                map(sitemap => selectedVersionCorrespondingURL(sitemap,  selectedVersionBaseURL, getLocation(), config.base) ?? selectedVersionBaseURL)
+                map(sitemap => selectedVersionCorrespondingURL(sitemap, selectedVersion, selectedVersionBaseURL, getLocation(), config.base) ?? selectedVersionBaseURL)
               )
           })
         )
@@ -189,7 +194,7 @@ export function setupVersionSelector(
  * @returns the URL to navigate to or null if we can't be sure that the
  * corresponding page to the current page exists in the selected version
  */
-function selectedVersionCorrespondingURL(selectedVersionSitemap: Sitemap,  selectedVersionBaseURL: URL, currentLocation: URL, currentBaseURL: string): URL | undefined {
+function selectedVersionCorrespondingURL(selectedVersionSitemap: Sitemap, _selectedVersion: Version, selectedVersionBaseURL: URL, currentLocation: URL, currentBaseURL: string): URL | undefined {
   const result = currentLocation.href.replace(currentBaseURL, selectedVersionBaseURL.href)
   return selectedVersionSitemap.has(result.split("#")[0])
     ? new URL(result)
