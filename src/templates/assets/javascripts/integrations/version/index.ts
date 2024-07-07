@@ -94,6 +94,7 @@ export function setupVersionSelector(
   versions$
     .pipe(
       map(versions => new Map(versions.map(version => [
+        // TODO: Check if the URL can be parsed before `new URL`
         `${new URL(`../${version.version}/`, config.base)}`,
         version
       ]))),
@@ -105,7 +106,9 @@ export function setupVersionSelector(
             if (ev.target instanceof Element) {
               const el = ev.target.closest("a")
               if (el && !el.target && urls.has(el.href)) {
-                const url = el.href
+                const selectedVersion = urls.get(el.href)!
+                const selectedVersionURL = new URL(el.href)  // Members of `urls` are guaranteed to parse
+
                 // This is a temporary hack to detect if a version inside the
                 // version selector or on another part of the site was clicked.
                 // If we're inside the version selector, we definitely want to
@@ -117,25 +120,26 @@ export function setupVersionSelector(
                 //
                 // See https://github.com/squidfunk/mkdocs-material/issues/4012
                 if (!ev.target.closest(".md-version")) {
-                  const version = urls.get(url)!
-                  if (version === current)
+                  if (selectedVersion === current) {
                     return EMPTY
+                  }
                 }
+
                 ev.preventDefault()
-                return of(url)
+                return of(selectedVersionURL)
               }
             }
             return EMPTY
           }),
-          switchMap(url => {
-            return fetchSitemap(new URL(url))
+          switchMap(selectedVersionBaseURL => {
+            return fetchSitemap(selectedVersionBaseURL)
               .pipe(
                 map(sitemap => {
                   const location = getLocation()
-                  const path = location.href.replace(config.base, url)
-                  return sitemap.has(path.split("#")[0])
-                    ? new URL(path)
-                    : new URL(url)
+                  const selectedVersionCorrespondingURL = location.href.replace(config.base, selectedVersionBaseURL.href)
+                  return sitemap.has(selectedVersionCorrespondingURL.split("#")[0])
+                    ? new URL(selectedVersionCorrespondingURL)
+                    : selectedVersionBaseURL
                 })
               )
           })
