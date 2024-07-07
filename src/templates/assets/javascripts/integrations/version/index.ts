@@ -46,7 +46,9 @@ import {
   renderVersionSelector
 } from "~/templates"
 
-import { Sitemap, fetchSitemap } from "../sitemap"
+import { fetchSitemap } from "../sitemap"
+
+import { selectedVersionCorrespondingURL } from "./correspondingPage"
 
 /* ----------------------------------------------------------------------------
  * Helper types
@@ -132,10 +134,17 @@ export function setupVersionSelector(
             return EMPTY
           }),
           switchMap(selectedVersionBaseURL => {
-            return fetchSitemap(selectedVersionBaseURL)
-              .pipe(
-                map(sitemap => selectedVersionCorrespondingURL(sitemap,  selectedVersionBaseURL, getLocation(), config.base) ?? selectedVersionBaseURL)
-              )
+            return fetchSitemap(selectedVersionBaseURL).pipe(
+              map(
+                sitemap =>
+                  selectedVersionCorrespondingURL({
+                    selectedVersionSitemap: sitemap,
+                    selectedVersionBaseURL,
+                    currentLocation: getLocation(),
+                    currentBaseURL: config.base
+                  }) ?? selectedVersionBaseURL,
+              ),
+            )
           })
         )
       )
@@ -180,18 +189,4 @@ export function setupVersionSelector(
         for (const warning of getComponentElements("outdated"))
           warning.hidden = false
     })
-}
-
-/**
- * Choose a URL to navigate to when the user chooses a version in the version
- * selector.
- *
- * @returns the URL to navigate to or null if we can't be sure that the
- * corresponding page to the current page exists in the selected version
- */
-function selectedVersionCorrespondingURL(selectedVersionSitemap: Sitemap,  selectedVersionBaseURL: URL, currentLocation: URL, currentBaseURL: string): URL | undefined {
-  const result = currentLocation.href.replace(currentBaseURL, selectedVersionBaseURL.href)
-  return selectedVersionSitemap.has(result.split("#")[0])
-    ? new URL(result)
-    : undefined
 }
